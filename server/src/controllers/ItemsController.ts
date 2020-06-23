@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
+import { config } from 'dotenv';
 import knex from '../database/connection';
+
+config();
 
 class ItemsController {
   async index (request: Request, response: Response) {
@@ -9,7 +12,7 @@ class ItemsController {
       return {
         id: item.id,
         title: item.title,
-        image_url: `http://localhost:3333/uploads/${item.image}`,
+        image_url: `${process.env.SERVER_URL}/uploads/${item.image}`,
       };
     });
 
