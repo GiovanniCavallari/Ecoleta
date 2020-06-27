@@ -5,6 +5,8 @@ import { LeafletMouseEvent } from "leaflet";
 import { Map, TileLayer, Marker } from "react-leaflet";
 import { api, ibge } from "../../services/api";
 
+import Dropzone from "../../components/Dropzone";
+
 import logo from "../../assets/logo.svg";
 
 import "./styles.css";
@@ -37,20 +39,21 @@ const CreatePoint = () => {
   const [selectedCity, setSelectedCity] = useState("0");
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [formSubmited, setFormSubmited] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File>();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    whatsapp: '',
+    name: "",
+    email: "",
+    whatsapp: "",
   });
 
-  const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0]);
-  const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0]);
+  const [initialPosition, setInitialPosition] = useState<[number, number]>([0,0]);
+  const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0,0]);
 
   const history = useHistory();
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(position =>{
+    navigator.geolocation.getCurrentPosition((position) => {
       const { latitude, longitude } = position.coords;
       setInitialPosition([latitude, longitude]);
     });
@@ -98,20 +101,20 @@ const CreatePoint = () => {
   };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const {name, value} = event.target;
+    const { name, value } = event.target;
     setFormData({ ...formData, [name]: value });
-  }
+  };
 
   const handleSelectedItem = (id: number) => {
-    const alreadySelected = selectedItems.findIndex(item => item === id);
+    const alreadySelected = selectedItems.findIndex((item) => item === id);
 
     if (alreadySelected >= 0) {
-      const filteredItems = selectedItems.filter(item => item !== id);
+      const filteredItems = selectedItems.filter((item) => item !== id);
       setSelectedItems(filteredItems);
     } else {
-      setSelectedItems([ ...selectedItems, id ]);
+      setSelectedItems([...selectedItems, id]);
     }
-  }
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -119,30 +122,36 @@ const CreatePoint = () => {
     const { name, email, whatsapp } = formData;
     const uf = selectedUf;
     const city = selectedCity;
-    const [ latitude, longitude ] = selectedPosition;
+    const [latitude, longitude] = selectedPosition;
     const items = selectedItems;
 
-    const data = {
-      name,
-      email,
-      whatsapp,
-      uf,
-      city,
-      latitude,
-      longitude,
-      items,
+    const data = new FormData();
+
+    data.append("name", name);
+    data.append("email", email);
+    data.append("whatsapp", whatsapp);
+    data.append("uf", uf);
+    data.append("city", city);
+    data.append("latitude", String(latitude));
+    data.append("longitude", String(longitude));
+    data.append("items", items.join(","));
+
+    if (selectedFile) {
+      data.append("image", selectedFile);
     }
 
-    await api.post('/points', data);
+    await api.post("/points", data);
 
     setFormSubmited(true);
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => {history.push('/')}, 1000);
-  }
+    document.body.style.overflow = "hidden";
+    setTimeout(() => {
+      history.push("/");
+    }, 1000);
+  };
 
   return (
     <div id="page-create-point">
-      <div className={formSubmited === true ? 'overlay visible' : 'overlay'}>
+      <div className={formSubmited === true ? "overlay visible" : "overlay"}>
         <div className="overlay-content">
           <FiCheckCircle color="#34CB79" size="40" />
           <p className="overlay-text">Cadastro concluído!</p>
@@ -162,6 +171,8 @@ const CreatePoint = () => {
           Cadastro do <br /> ponto de coleta
         </h1>
 
+        <Dropzone onFileUploaded={setSelectedFile} />
+
         <fieldset>
           <legend>
             <h2>Dados</h2>
@@ -169,18 +180,33 @@ const CreatePoint = () => {
 
           <div className="field">
             <label htmlFor="name">Nome da entidade</label>
-            <input type="text" name="name" id="name" onChange={handleInputChange} />
+            <input
+              type="text"
+              name="name"
+              id="name"
+              onChange={handleInputChange}
+            />
           </div>
 
           <div className="field-group">
             <div className="field">
               <label htmlFor="email">Email</label>
-              <input type="email" name="email" id="email" onChange={handleInputChange} />
+              <input
+                type="email"
+                name="email"
+                id="email"
+                onChange={handleInputChange}
+              />
             </div>
 
             <div className="field">
               <label htmlFor="whatsapp">Whatsapp</label>
-              <input type="text" name="whatsapp" id="whatsapp" onChange={handleInputChange} />
+              <input
+                type="text"
+                name="whatsapp"
+                id="whatsapp"
+                onChange={handleInputChange}
+              />
             </div>
           </div>
         </fieldset>
@@ -192,11 +218,7 @@ const CreatePoint = () => {
           </legend>
 
           <div className="address-map">
-            <Map
-              center={initialPosition}
-              zoom={15}
-              onClick={handleMapClick}
-            >
+            <Map center={initialPosition} zoom={15} onClick={handleMapClick}>
               <TileLayer
                 attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -251,9 +273,9 @@ const CreatePoint = () => {
           <ul className="items-grid">
             {items.map((item) => (
               <li
-              key={item.id}
-              onClick={() => handleSelectedItem(item.id)}
-              className={selectedItems.includes(item.id) ? 'selected' : ''}
+                key={item.id}
+                onClick={() => handleSelectedItem(item.id)}
+                className={selectedItems.includes(item.id) ? "selected" : ""}
               >
                 <img src={item.image_url} alt={item.title} title={item.title} />
                 <span>{item.title}</span>
